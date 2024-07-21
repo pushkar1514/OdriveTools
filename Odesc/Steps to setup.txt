@@ -1,0 +1,79 @@
+Setup Steps in Arduino :
+
+- 3 files(.cpp, .h, Enum.h) are attached in repository download all files.
+- goto Arduino => libraries => ODriveArduino => src
+- replace all .cpp, .h, Enum.h with given files.
+
+
+
+Setup on terminal : 
+- check python version of your terminal by command => python --version
+- if it is above 3.9 then install below version of 3.9 or 3.9.
+- install odrive package => pip install odrive0.5.1post0
+- now download zadig software from internet 
+- connect your laptop with odesc (odesc should powered ON)
+- goto zadig => options => list all devices => select odrive native
+- from right box in front of Driver select libusb win 
+- click on update driver 
+- go to terminal and put command => odrivetool
+- it will show you odrv0 in connected to pc
+
+
+1) Steps to set motor configuration : (put all commands step by step)
+	
+	odrv0.axis0.motor.config.current_lim = 90
+	odrv0.axis0.controller.config.vel_limit = 70
+	odrv0.axis0.motor.config.calibration_current = 25
+	odrv0.axis0.motor.config.pole_pairs = 7
+	odrv0.axis0.motor.config.torque_constant = 8.27/300
+	odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+	odrv0.axis0.encoder.config.cpr = 8192
+
+	odrv0.axis0.motor.config.requested_current_range = 90
+	odrv0.config.dc_max_positive_current = 90
+	odrv0.config.dc_max_negative_current = -90
+	odrv0.config.max_regen_current = 120
+
+
+2) Steps to set Odesc on Auto Calibration : (it will calibrate everytime when motor turns ON automatically)
+- set all motor configuration first.
+- then put all below commands
+
+	odrv0.axis0.encoder.config.use_index = True
+	odrv0.axis0.requested_state = AXIS_STATE_MOTOR_CALIBRATION
+	while odrv0.axis0.current_state != AXIS_STATE_IDLE: time.sleep(0.2)
+	odrv0.axis0.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
+	while odrv0.axis0.current_state != AXIS_STATE_IDLE: time.sleep(0.2)
+	odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+	while odrv0.axis0.current_state != AXIS_STATE_IDLE: time.sleep(0.2)
+	odrv0.axis0.encoder.config.pre_calibrated = True
+	odrv0.axis0.motor.config.pre_calibrated = True
+	odrv0.axis0.config.startup_motor_calibration = True
+	odrv0.axis0.config.startup_encoder_offset_calibration = True
+	odrv0.axis0.config.startup_encoder_index_search = True
+	odrv0.axis0.config.startup_closed_loop_control = True
+
+	odrv0.axis0.controller.config.vel_ramp_rate = 20
+	odrv0.axis0.controller.config.input_mode = INPUT_MODE_VEL_RAMP
+	odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+
+	odrv0.save_configuration()
+
+3) Steps to calibrate the odesc : (it will calibrate only once)
+
+	odrv0.erase_configuration()
+
+- set all motor configuration
+	
+	odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+	odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+	
+	odrv0.axis0.controller.config.vel_ramp_rate = 20
+	odrv0.axis0.controller.config.input_mode = INPUT_MODE_VEL_RAMP
+	odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+	
+4) Command to give velocity : 
+	
+		odrv0.axis0.controller.input_vel = vel
+
+	

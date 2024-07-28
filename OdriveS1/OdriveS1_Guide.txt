@@ -1,7 +1,7 @@
 Odrive with GUI : 
 
-DC bus Undervoltage trip Level : 30
-DC bus OverVoltage trip level : 12
+DC bus Undervoltage trip Level : 12
+DC bus OverVoltage trip level : 30
 DC max positive current : 90
 DC max negative current : -90
 

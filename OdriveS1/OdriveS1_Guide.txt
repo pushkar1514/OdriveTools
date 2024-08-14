@@ -37,25 +37,3 @@ gpio6_mode = UART_A
 gpio7_mode = UART_A
 
 
-
-
-
-Odrive Library Changes : 
-
-In CPP file : 
-
-Changed Both setVelocity function
-- added one parameter int Motor_number 
-
-In H file : 
-
-Changed Both setVelocity function
-- added one parameter int Motor_number 
-
-
-Pinout For Arduino :
-
-Blue 7 = TX
-Grey 8 = RX 
-Purple 9 = VCC
-Yellow 10 = GND

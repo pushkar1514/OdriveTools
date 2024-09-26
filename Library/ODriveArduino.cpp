@@ -18,6 +18,23 @@ void ODriveArduino::clearErrors() {
     serial_ << "sc\n";
 }
 
+void ODriveArduino::closedLoopState(){
+    Serial.println("Waiting for ODrive...");
+    while (getState() == AXIS_STATE_UNDEFINED) {
+        delay(10);
+    }
+    Serial.print("DC voltage: ");
+    Serial.println(getParameterAsFloat("vbus_voltage"));
+    
+    Serial.println("Enabling closed loop control...");
+    while (getState() != AXIS_STATE_CLOSED_LOOP_CONTROL) {
+        clearErrors();
+        setState(AXIS_STATE_CLOSED_LOOP_CONTROL);
+        delay(10);
+    }
+    Serial.println("ODrive running!");
+}
+
 void ODriveArduino::setPosition(float position) {
     setPosition(position, 0.0f, 0.0f);
 }

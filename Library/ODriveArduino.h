@@ -27,6 +27,13 @@ public:
     /**
      * @brief Sends a new position setpoint.
      */
+
+    void closedLoopState();
+    /**
+     * @brief Requested Closed Loop State.
+     */
+    
+
     void setPosition(float position);
 
     /**

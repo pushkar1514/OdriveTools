@@ -1,9 +1,9 @@
-#include <ODriveArduino.h>
+#include <ODriveUART.h>
 // #include <SoftwareSerial.h>
 
 // SoftwareSerial odrive_serial(8, 9); // RX (ODrive TX), TX (ODrive RX)
 
-ODriveArduino odrive(Serial5);       // ODrive connected on Serial 5
+ODriveUART odrive(Serial5);
 
 int vel , axis = 0;
 int pos;
@@ -26,8 +26,8 @@ void loop() {
   // Serial.print("Enter the Speed : ");
   // while(Serial.available()==0);
   // vel = Serial.parseInt();
-  // Serial.print(vel);
-  // Serial.print("                      Enter the Position : ");
+  // Serial.println(vel);
+  // Serial.print("Enter the Position : ");
   // while(Serial.available()==0);
   // pos = Serial.parseInt();
   // Serial.println(pos);

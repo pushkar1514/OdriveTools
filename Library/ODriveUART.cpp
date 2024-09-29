@@ -1,116 +1,119 @@
-
-#ifndef ODriveUART_h
-#define ODriveUART_h
+// Author: ODrive Robotics Inc.
+// License: MIT
+// Documentation: https://docs.odriverobotics.com/v/latest/guides/arduino-guide.html
 
 #include "Arduino.h"
-#include "ODriveEnums.h"
+#include "ODriveUART.h"
 
-struct ODriveFeedback {
-    float pos;
-    float vel;
-};
+static const int kMotorNumber = 0;
 
-class ODriveUART {
-public:
-    /**
-     * @brief Constructs an ODriveUART instance that will communicate over
-     * the specified serial port.
-     */
-    ODriveUART(Stream& serial);
+// Print with stream operator
+template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
+template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
 
-    /**
-     * @brief Clears the error status of the ODrive and restarts the brake
-     * resistor if it was disabled due to an error.
-     */
-    void clearErrors();
+ODriveUART::ODriveUART(Stream& serial)
+    : serial_(serial) {}
 
-    /**
-     * @brief Sends a new position setpoint.
-     */
+void ODriveUART::clearErrors() {
+    serial_ << "sc\n";
+}
 
-    void closedLoopState();
-    /**
-     * @brief Requested Closed Loop State.
-     */
+void ODriveUART::closedLoopState(){
+    Serial.println("Waiting for ODrive...");
+    while (getState() == AXIS_STATE_UNDEFINED) {
+        delay(10);
+    }
+    Serial.print("DC voltage: ");
+    Serial.println(getParameterAsFloat("vbus_voltage"));
     
+    Serial.println("Enabling closed loop control...");
+    while (getState() != AXIS_STATE_CLOSED_LOOP_CONTROL) {
+        clearErrors();
+        setState(AXIS_STATE_CLOSED_LOOP_CONTROL);
+        delay(10);
+    }
+    Serial.println("ODrive running!");
+}
 
-    void setPosition(float position);
+void ODriveUART::setPosition(float position) {
+    setPosition(position, 0.0f, 0.0f);
+}
 
-    /**
-     * @brief Sends a new position setpoint with a velocity feedforward term.
-     */
-    void setPosition(float position, float velocity_feedforward);
+void ODriveUART::setPosition(float position, float velocity_feedforward) {
+    setPosition(position, velocity_feedforward, 0.0f);
+}
 
-    /**
-     * @brief Sends a new position setpoint with velocity and torque feedforward terms.
-     */
-    void setPosition(float position, float velocity_feedforward, float torque_feedforward);
+void ODriveUART::setPosition(float position, float velocity_feedforward, float torque_feedforward) {
+    serial_ << "p " << kMotorNumber  << " " << position << " " << velocity_feedforward << " " << torque_feedforward << "\n";
+}
 
-    /**
-     * @brief Sends a new velocity setpoint.
-     */
-    void SetVelocity(int motor_number, float velocity);
+void ODriveUART::SetVelocity(int motor_number, float velocity) {
+    SetVelocity(motor_number, velocity, 0.0f);
+}
 
-    /**
-     * @brief Sends a new velocity setpoint with a torque feedforward term.
-     */
-    void SetVelocity(int motor_number, float velocity, float current_feedforward);
+void ODriveUART::SetVelocity(int motor_number, float velocity, float current_feedforward) {
+    serial_ << "v " << motor_number  << " " << velocity << " " << current_feedforward << "\n";
+}
 
-    /**
-     * @brief Sends a new torque setpoint.
-     */
-    void setTorque(float torque);
+void ODriveUART::setTorque(float torque) {
+    serial_ << "c " << kMotorNumber << " " << torque << "\n";
+}
 
-    /**
-     * @brief Puts the ODrive into trapezoidal trajectory mode and sends a new
-     * position setpoint.
-     */
-    void trapezoidalMove(float position);
+void ODriveUART::trapezoidalMove(float position) {
+    serial_ << "t " << kMotorNumber << " " << position << "\n";
+}
 
-    /**
-     * @brief Requests the latest position and velocity estimates.
-     * 
-     * Returns pos = 0.0 and vel = 0.0 in case of a communication error.
-     */
-    ODriveFeedback getFeedback();
+ODriveFeedback ODriveUART::getFeedback() {
+    // Flush RX
+    while (serial_.available()) {
+        serial_.read();
+    }
 
-    /**
-     * @brief Requests the latest position estimate.
-     * 
-     * Returns 0.0 in case of a communication error.
-     */
-    float getPosition() { return getFeedback().pos; }
+    serial_ << "f " << kMotorNumber << "\n";
 
-    /**
-     * @brief Requests the latest velocity estimate.
-     * 
-     * Returns 0.0 in case of a communication error.
-     */
-    float getVelocity() { return getFeedback().vel; }
+    String response = readLine();
 
-    // Generic parameter access
-    String getParameterAsString(const String& path);
-    long getParameterAsInt(const String& path) { return getParameterAsString(path).toInt(); }
-    float getParameterAsFloat(const String& path) { return getParameterAsString(path).toFloat(); }
-    void setParameter(const String& path, const String& value);
-    void setParameter(const String& path, long value) { setParameter(path, String(value)); }
+    int spacePos = response.indexOf(' ');
+    if (spacePos >= 0) {
+        return {
+            response.substring(0, spacePos).toFloat(),
+            response.substring(spacePos+1).toFloat()
+        };
+    } else {
+        return {0.0f, 0.0f};
+    }
+}
 
-    /**
-     * @brief Tells the ODrive to change its axis state.
-     */
-    void setState(ODriveAxisState requested_state);
+String ODriveUART::getParameterAsString(const String& path) {
+    serial_ << "r " << path << "\n";
+    return readLine();
+}
 
-    /**
-     * @brief Requests the current axis state from the ODrive.
-     * 
-     * Returns AXIS_STATE_UNDEFINED in case of a communication error.
-     */
-    ODriveAxisState getState();
+void ODriveUART::setParameter(const String& path, const String& value) {
+    serial_ << "w " << path << " " << value << "\n";
+}
 
-private:
-    String readLine(unsigned long timeout_ms = 10);
+void ODriveUART::setState(ODriveAxisState requested_state) {
+    setParameter("axis0.requested_state", String((long)requested_state));
+}
 
-    Stream& serial_;
-};
+ODriveAxisState ODriveUART::getState() {
+    return getParameterAsInt("axis0.current_state");
+}
 
-#endif //ODriveUART_h
+String ODriveUART::readLine(unsigned long timeout_ms) {
+    String str = "";
+    unsigned long timeout_start = millis();
+    for (;;) {
+        while (!serial_.available()) {
+            if (millis() - timeout_start >= timeout_ms) {
+                return str;
+            }
+        }
+        char c = serial_.read();
+        if (c == '\n')
+            break;
+        str += c;
+    }
+    return str;
+}

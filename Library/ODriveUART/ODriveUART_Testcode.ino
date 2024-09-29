@@ -1,3 +1,5 @@
+// Reference : https://docs.odriverobotics.com/v/latest/guides/arduino-uart-guide.html
+
 #include <ODriveUART.h>
 // #include <SoftwareSerial.h>
 
